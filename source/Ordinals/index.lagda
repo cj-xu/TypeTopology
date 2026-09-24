@@ -16,6 +16,7 @@ import Ordinals.BrouwerCodesInterpretations
 import Ordinals.BrouwerCodesIntoInductiveRecursiveCodes
 import Ordinals.BrouwerCodesVariationInterpretations
 import Ordinals.BuraliForti                   -- by [1]
+import Ordinals.CantorNormalForm              -- by [2]
 import Ordinals.ChurchEncoding
 import Ordinals.Closure
 import Ordinals.CompactnessOfSuprema
@@ -29,6 +30,8 @@ import Ordinals.FailureOfTrichotomy
 import Ordinals.Fin                           -- by [5] with additions by [2]
 import Ordinals.IdentifyingEquivalentOrdinals -- by [3]
 import Ordinals.Indecomposable
+import Ordinals.InducedSuccessor              -- by [2]
+import Ordinals.InducedSuccessorExamples      -- by [2]
 import Ordinals.InductiveRecursiveCodesInterpretations
 import Ordinals.InfProperty
 import Ordinals.Injectivity
@@ -44,9 +47,12 @@ import Ordinals.Omega                         -- by [2]
 import Ordinals.OrdinalOfOrdinals
 import Ordinals.OrdinalOfOrdinalsInfima       -- by [6]
 import Ordinals.OrdinalOfOrdinalsSuprema      -- by [3]
+import Ordinals.OrdinalOfOrdinalsWithProperty -- by [2]
 import Ordinals.OrdinalOfTruthValues
+import Ordinals.Plump                        -- by [2]
 import Ordinals.Propositions
 import Ordinals.ShulmanTaboo
+import Ordinals.Successors                    -- by [2]
 import Ordinals.SupSum
 import Ordinals.Taboos                        -- by [3]
 import Ordinals.ToppedArithmetic
