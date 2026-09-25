@@ -49,7 +49,7 @@ import Ordinals.OrdinalOfOrdinalsInfima       -- by [6]
 import Ordinals.OrdinalOfOrdinalsSuprema      -- by [3]
 import Ordinals.OrdinalOfOrdinalsWithProperty -- by [2]
 import Ordinals.OrdinalOfTruthValues
-import Ordinals.Plump                        -- by [2]
+import Ordinals.Plump                         -- by [2]
 import Ordinals.Propositions
 import Ordinals.ShulmanTaboo
 import Ordinals.Successors                    -- by [2]
