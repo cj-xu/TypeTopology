@@ -22,7 +22,6 @@ import Ordinals.OrdinalOfOrdinalsWithProperty
 import Ordinals.Plump
 open import Ordinals.Equivalence
 open import Ordinals.InducedSuccessor ua
-open import Ordinals.Maps
 open import Ordinals.SmallWeakPredecessors ua
 open import Ordinals.Successors ua
 open import Ordinals.Type
@@ -37,8 +36,6 @@ open import Ordinals.Arithmetic (Univalence-gives-FunExt ua)
 open import UF.Base using (transport₂)
 open import UF.ClassicalLogic
 open import UF.Size using (propositional-resizing)
-open import UF.Subsingletons
-
 
 \end{code}
 

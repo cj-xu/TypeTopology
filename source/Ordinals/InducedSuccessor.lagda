@@ -24,12 +24,9 @@ open import Ordinals.Underlying
 open import UF.Equiv
 open import UF.Subsingletons
 open import UF.UA-FunExt using (Univalence-gives-FunExt)
-
 open import Ordinals.AdditionProperties ua
  using (+ₒ-↓-left; successor-lemma-right; successor-increasing)
-
 open import Ordinals.Successors ua
-
 open import Ordinals.LimitPoints (Univalence-gives-FunExt ua)
  using (is-successor-of)
 

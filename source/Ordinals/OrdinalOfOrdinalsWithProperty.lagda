@@ -31,11 +31,8 @@ open import Ordinals.Underlying
 open import Ordinals.SmallWeakPredecessors ua
 open import Ordinals.Successors ua using (fat-succ)
 open import UF.Subsingletons
-open import UF.Base
-open import UF.Embeddings
 open import UF.Equiv
 open import UF.EquivalenceExamples
-open import UF.Sets-Properties
 open import UF.Size
 open import UF.UA-FunExt
  using (Univalence-gives-FunExt; Univalence-gives-Fun-Ext)

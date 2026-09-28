@@ -32,12 +32,10 @@ private
 open import MLTT.Spartan
 open import Ordinals.Notions
 open import Ordinals.Equivalence
-open import Ordinals.Maps
 open import Ordinals.Propositions ua
 open import Ordinals.Underlying
 open import Ordinals.AdditionProperties ua
- using (+ₒ-↓-left; successor-lemma-right;
-        𝟘ₒ-least-⊴)
+ using (+ₒ-↓-left; successor-lemma-right; 𝟘ₒ-least-⊴)
 open import Ordinals.Type
 open import Ordinals.OrdinalOfOrdinals ua
 open import Ordinals.SmallWeakPredecessors ua
@@ -45,7 +43,6 @@ open import Ordinals.WellOrderTransport fe'
 import Ordinals.OrdinalOfOrdinalsWithProperty
 import Ordinals.InducedSuccessor
 import Ordinals.Successors
-open import UF.Base
 open import UF.ClassicalLogic
 open import UF.Equiv
 open import UF.Size
