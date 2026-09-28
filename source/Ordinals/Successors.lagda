@@ -1,8 +1,14 @@
 Tom de Jong, Nicolai Kraus, Fredrik Nordvall Forsberg and Chuangjie Xu
 23 September 2026
 
-We study strong and exact successors within an ordinal, and the thin and
-fat successor constructions on ordinals.
+Successors of ordinals
+
+We study strong and exact successors within an ordinal.  We then define and
+compare two successor constructions.  Following Taylor [1], we call them the
+thin and fat successors.
+
+[1] Paul Taylor.  Intuitionistic sets and ordinals.  The Journal of Symbolic
+    Logic, 61(3):705–744, 1996. https://doi.org/10.2307/2275781
 
 \begin{code}
 
@@ -13,6 +19,7 @@ open import UF.Univalence
 module Ordinals.Successors (ua : Univalence) where
 
 open import MLTT.Spartan
+open import MLTT.Plus-Properties using (+functor)
 open import Ordinals.AdditionProperties ua
 open import Ordinals.Equivalence
 open import Ordinals.Maps
@@ -23,6 +30,7 @@ open import Ordinals.OrdinalOfOrdinals ua
 open import Ordinals.Propositions ua
 open import UF.ClassicalLogic
 open import UF.Equiv
+open import UF.EquivalenceExamples using (+-cong; one-𝟙-only)
 open import UF.Subsingletons
 open import UF.UA-FunExt
 open import Ordinals.Arithmetic (Univalence-gives-FunExt ua)
@@ -88,12 +96,13 @@ requires every element weakly below x to be strictly below s.
   = pr₂ (exact x) (Reflexivity B) , (λ z → pr₁ (exact z))
 
  Has-exact-successors : 𝓤 ̇
- Has-exact-successors = (x : ⟨ B ⟩) → Σ s ꞉ ⟨ B ⟩ , s is-exact-succ-of x
+ Has-exact-successors
+  = (x : ⟨ B ⟩) → Σ s ꞉ ⟨ B ⟩ , s is-exact-succ-of x
 
 \end{code}
 
-Under mixed transitivity, that is, x ≼ᴮ y → y ≺ᴮ z → x ≺ᴮ z, exact successors
-and strong successors coincide.
+Under mixed transitivity, that is, x ≼ᴮ y → y ≺ᴮ z → x ≺ᴮ z,
+exact successors and strong successors coincide.
 
 Without that assumption, we keep the two notions distinct.
 
@@ -127,13 +136,12 @@ Without that assumption, we keep the two notions distinct.
 
 ■ Thin and fat successors
 
-Following Taylor, we call the following two constructions the thin and fat
-successors.  The thin successor adds a new greatest element to A.  The fat
-successor consists of all ordinals weakly below A, ordered by strict ordinal
-comparison.  Classically these constructions are order-isomorphic, but they
-need not coincide constructively.
+The thin successor adds a new greatest element to A.  The fat successor
+consists of all ordinals weakly below A, ordered by strict ordinal comparison.
+Classically these constructions are order-isomorphic, but they need not
+coincide constructively.
 
-These constructions apply to any ordinal A. The thin successor stays in
+These constructions apply to any ordinal A.  The thin successor stays in
 the universe of A; the fat successor as defined here lives in the next
 universe, since its elements range over Ordinal 𝓤.
 
@@ -176,6 +184,38 @@ fat-succ {𝓤} A = X , _≺_ , p , w , e , t
 
 \end{code}
 
+The thin successor respects ordinal equivalence, including equivalences
+between ordinals in different universes.
+
+\begin{code}
+
+thin-succ-cong
+ : {A : Ordinal 𝓤} {B : Ordinal 𝓥}
+ → A ≃ₒ B → thin-succ A ≃ₒ thin-succ B
+thin-succ-cong {A = A} {B = B} e@(f , p , f-is-equiv , q)
+ = +functor f (λ _ → ⋆) , forward , pr₂ sum-equiv , backward
+ where
+  sum-equiv : (⟨ A ⟩ + 𝟙) ≃ (⟨ B ⟩ + 𝟙)
+  sum-equiv = +-cong (≃ₒ-gives-≃ A B e) one-𝟙-only
+
+  forward
+   : is-order-preserving (thin-succ A) (thin-succ B)
+      (+functor f (λ _ → ⋆))
+  forward (inl a) (inl b) l = p a b l
+  forward (inl a) (inr ⋆) l = ⋆
+  forward (inr ⋆) (inl b) l = 𝟘-elim l
+  forward (inr ⋆) (inr ⋆) l = 𝟘-elim l
+
+  backward
+   : is-order-preserving (thin-succ B) (thin-succ A)
+      (inverse (+functor f (λ _ → ⋆)) (pr₂ sum-equiv))
+  backward (inl a) (inl b) l = q a b l
+  backward (inl a) (inr ⋆) l = ⋆
+  backward (inr ⋆) (inl b) l = 𝟘-elim l
+  backward (inr ⋆) (inr ⋆) l = 𝟘-elim l
+
+\end{code}
+
 ■ The thin successor is weakly below the fat successor
 
 The canonical simulation sends each element to its initial segment and the
@@ -214,9 +254,9 @@ order equivalence, giving the reverse comparison across universes.
 
 \begin{code}
 
-EM-gives-fat-succ-⊴-thin-succ
+EM-implies-fat-succ-⊴-thin-succ
  : EM 𝓤 → (A : Ordinal 𝓤) → fat-succ A ⊴ thin-succ A
-EM-gives-fat-succ-⊴-thin-succ {𝓤} em A
+EM-implies-fat-succ-⊴-thin-succ {𝓤} em A
  = ≃ₒ-to-⊴ (fat-succ A) (thin-succ A)
     (≃ₒ-sym (thin-succ A) (fat-succ A) (f , pr₂ sim , e , r))
  where
@@ -225,7 +265,8 @@ EM-gives-fat-succ-⊴-thin-succ {𝓤} em A
 
   section : (v : ⟨ fat-succ A ⟩)
           → Σ u ꞉ ⟨ thin-succ A ⟩ , f u ＝ v
-  section (C , h) = dispatch (trichotomy₃ _⊲⁻_ em ⊲⁻-is-well-order C A)
+  section (C , h)
+   = dispatch (trichotomy₃ _⊲⁻_ em ⊲⁻-is-well-order C A)
    where
     dispatch : (C ⊲⁻ A) + (C ＝ A) + (A ⊲⁻ C)
           → Σ u ꞉ ⟨ thin-succ A ⟩ , f u ＝ (C , h)
@@ -238,7 +279,9 @@ EM-gives-fat-succ-⊴-thin-succ {𝓤} em A
     dispatch (inr (inl q))
      = inr ⋆ , to-subtype-＝ (λ D → ⊴-is-prop-valued D A) (q ⁻¹)
     dispatch (inr (inr l))
-     = 𝟘-elim (⊴-gives-not-⊲ C A h (⌜ ⊲-is-equivalent-to-⊲⁻ A C ⌝⁻¹ l))
+     = 𝟘-elim
+        (⊴-gives-not-⊲ C A h
+          (⌜ ⊲-is-equivalent-to-⊲⁻ A C ⌝⁻¹ l))
 
   e : is-equiv f
   e = lc-split-surjections-are-equivs f
@@ -252,15 +295,16 @@ EM-gives-fat-succ-⊴-thin-succ {𝓤} em A
 \end{code}
 
 For the converse, the reverse comparison at the one-element ordinal
-already suffices. Its thin successor has two elements; the position of a
+already suffices.  Its thin successor has two elements; the position of a
 proposition, viewed as an element of its fat successor, decides whether
 that proposition holds.
 
 \begin{code}
 
-fat-succ-one-⊴-thin-succ-one-gives-EM
+fat-succ-one-⊴-thin-succ-one-implies-EM
  : fat-succ (𝟙ₒ {𝓤}) ⊴ thin-succ 𝟙ₒ → EM 𝓤
-fat-succ-one-⊴-thin-succ-one-gives-EM {𝓤} (g , sim) P isp = decide (g v) refl
+fat-succ-one-⊴-thin-succ-one-implies-EM {𝓤} (g , sim) P isp
+ = decide (g v) refl
  where
   T = thin-succ (𝟙ₒ {𝓤})
   F = fat-succ (𝟙ₒ {𝓤})
@@ -301,19 +345,21 @@ fat-succ-one-⊴-thin-succ-one-gives-EM {𝓤} (g , sim) P isp = decide (g v) re
     below : bottom ≺⟨ F ⟩ v
     below = simulations-are-order-reflecting F T g sim bottom v images-below
 
-fat-succ-⊴-thin-succ-gives-EM
+fat-succ-⊴-thin-succ-implies-EM
  : ((A : Ordinal 𝓤) → fat-succ A ⊴ thin-succ A) → EM 𝓤
-fat-succ-⊴-thin-succ-gives-EM h
- = fat-succ-one-⊴-thin-succ-one-gives-EM (h 𝟙ₒ)
+fat-succ-⊴-thin-succ-implies-EM h
+ = fat-succ-one-⊴-thin-succ-one-implies-EM (h 𝟙ₒ)
 
 fat-succ-⊴-thin-succ-iff-EM
  : ((A : Ordinal 𝓤) → fat-succ A ⊴ thin-succ A) ↔ EM 𝓤
 fat-succ-⊴-thin-succ-iff-EM
- = fat-succ-⊴-thin-succ-gives-EM , EM-gives-fat-succ-⊴-thin-succ
+ = fat-succ-⊴-thin-succ-implies-EM ,
+   EM-implies-fat-succ-⊴-thin-succ
 
 \end{code}
 
-We now study the properties of thin and fat successors.
+To study the thin successor using the internal notions above, we instantiate
+them at the ordinal of ordinals.
 
 \begin{code}
 
@@ -359,16 +405,17 @@ its thin successor forces it to be empty or inhabited.
 
 \begin{code}
 
- thin-succ-one-is-exact-succ-gives-EM
+ thin-succ-one-is-exact-succ-implies-EM
   : thin-succ 𝟙ₒ is-exact-succ-of 𝟙ₒ → EM 𝓤
- thin-succ-one-is-exact-succ-gives-EM exact P isp = decide below
+ thin-succ-one-is-exact-succ-implies-EM exact P isp = decide below
   where
    C : Ordinal 𝓤
    C = prop-ordinal P isp
 
    below : C ⊲ thin-succ 𝟙ₒ
    below = pr₂ (exact C)
-            (⊴-gives-≼ C 𝟙ₒ (prop-ordinal-⊴ isp 𝟙-is-prop (λ _ → ⋆)))
+            (⊴-gives-≼ C 𝟙ₒ
+              (prop-ordinal-⊴ isp 𝟙-is-prop (λ _ → ⋆)))
 
    decide : C ⊲ thin-succ 𝟙ₒ → P + ¬ P
    decide (inl ⋆ , e) = inr does-not-hold
@@ -381,10 +428,10 @@ its thin successor forces it to be empty or inhabited.
        empty (inr ⋆ , l) = 𝟘-elim l
    decide (inr ⋆ , e) = inl (transport⁻¹ ⟨_⟩ e (inl ⋆ , ⋆))
 
- thin-succ-is-exact-succ-gives-EM
+ thin-succ-is-exact-succ-implies-EM
   : ((A : Ordinal 𝓤) → (thin-succ A) is-exact-succ-of A) → EM 𝓤
- thin-succ-is-exact-succ-gives-EM exact
-  = thin-succ-one-is-exact-succ-gives-EM (exact 𝟙ₒ)
+ thin-succ-is-exact-succ-implies-EM exact
+  = thin-succ-one-is-exact-succ-implies-EM (exact 𝟙ₒ)
 
 \end{code}
 
@@ -395,9 +442,9 @@ comparison ⊲⁻ so that excluded middle in 𝓤 suffices.
 
 \begin{code}
 
- EM-gives-thin-succ-is-exact-succ
+ EM-implies-thin-succ-is-exact-succ
   : EM 𝓤 → (A : Ordinal 𝓤) → (thin-succ A) is-exact-succ-of A
- EM-gives-thin-succ-is-exact-succ em A C
+ EM-implies-thin-succ-is-exact-succ em A C
   = pr₂ (thin-succ-is-succ A) C , backward
   where
    backward : C ≼ A → C ⊲ thin-succ A
@@ -406,7 +453,8 @@ comparison ⊲⁻ so that excluded middle in 𝓤 suffices.
      dispatch : (C ⊲⁻ A) + (C ＝ A) + (A ⊲⁻ C) → C ⊲ thin-succ A
      dispatch (inl l)
       = ⊲-is-transitive C A (thin-succ A)
-         (⌜ ⊲-is-equivalent-to-⊲⁻ C A ⌝⁻¹ l) (successor-increasing A)
+         (⌜ ⊲-is-equivalent-to-⊲⁻ C A ⌝⁻¹ l)
+         (successor-increasing A)
      dispatch (inr (inl e))
       = transport⁻¹ (_⊲ thin-succ A) e (successor-increasing A)
      dispatch (inr (inr l))
@@ -416,16 +464,18 @@ comparison ⊲⁻ so that excluded middle in 𝓤 suffices.
  thin-succ-is-exact-succ-iff-EM
   : ((A : Ordinal 𝓤) → (thin-succ A) is-exact-succ-of A) ↔ EM 𝓤
  thin-succ-is-exact-succ-iff-EM
-  = thin-succ-is-exact-succ-gives-EM , EM-gives-thin-succ-is-exact-succ
+  = thin-succ-is-exact-succ-implies-EM ,
+    EM-implies-thin-succ-is-exact-succ
 
 \end{code}
 
-■ Fat successors are exact, but need not be strong constructively
+■ Fat successors are exact, but relative leastness requires excluded middle
 
 For the fat successor we use the cross-universe comparison ⊲⁻, since it
 lives one universe higher.  Its initial segment at (C , h) is order-isomorphic
 to C.  Consequently, its predecessors from the universe of A are exactly
-the ordinals weakly below A. Therefore, fat successors are exact.
+the ordinals weakly below A.  This is the cross-universe analogue of being
+an exact successor.
 
 \begin{code}
 
@@ -460,42 +510,44 @@ fat-succ-is-exact-succ A C = forward , backward
 
 \end{code}
 
-We have already proved the successor property for fat-succ. The additional
-clause for strongness would say that fat-succ A is weakly below every
-ordinal strictly above A.  Even restricting those upper bounds to the
-universe of A, this clause at the one-element ordinal implies excluded
-middle: take its thin successor as the strict upper bound.
+The additional clause in the cross-universe analogue of a strong successor
+would say that fat-succ A is weakly below every ordinal strictly above A.
+Even when the upper bounds are restricted to the universe of A, this clause
+at the one-element ordinal implies excluded middle: take its thin successor
+as the strict upper bound.
 
 We call this clause relative leastness, with upper bounds restricted to the
-input universe. It is the additional clause for strongness, rather than the
-full internal successor predicate defined above.
+input universe.  It is the additional clause for being strong, rather than
+the full internal successor predicate defined above.
 
 \begin{code}
 
 Fat-succ-relative-leastness : Ordinal 𝓤 → 𝓤 ⁺ ̇
-Fat-succ-relative-leastness {𝓤} A = (C : Ordinal 𝓤) → A ⊲ C → fat-succ A ⊴ C
+Fat-succ-relative-leastness {𝓤} A
+ = (C : Ordinal 𝓤) → A ⊲ C → fat-succ A ⊴ C
 
-fat-succ-one-relative-leastness-gives-EM
+fat-succ-one-relative-leastness-implies-EM
  : Fat-succ-relative-leastness (𝟙ₒ {𝓤}) → EM 𝓤
-fat-succ-one-relative-leastness-gives-EM least
- = fat-succ-one-⊴-thin-succ-one-gives-EM
+fat-succ-one-relative-leastness-implies-EM least
+ = fat-succ-one-⊴-thin-succ-one-implies-EM
     (least (thin-succ 𝟙ₒ) (successor-increasing 𝟙ₒ))
 
-fat-succ-relative-leastness-gives-EM
+fat-succ-relative-leastness-implies-EM
  : ((A : Ordinal 𝓤) → Fat-succ-relative-leastness A) → EM 𝓤
-fat-succ-relative-leastness-gives-EM least
- = fat-succ-one-relative-leastness-gives-EM (least 𝟙ₒ)
+fat-succ-relative-leastness-implies-EM least
+ = fat-succ-one-relative-leastness-implies-EM (least 𝟙ₒ)
 
-EM-gives-fat-succ-relative-leastness
+EM-implies-fat-succ-relative-leastness
  : EM 𝓤 → (A : Ordinal 𝓤) → Fat-succ-relative-leastness A
-EM-gives-fat-succ-relative-leastness em A C (c , refl)
+EM-implies-fat-succ-relative-leastness em A C (c , refl)
  = ⊴-trans (fat-succ (C ↓ c)) (thin-succ (C ↓ c)) C
-    (EM-gives-fat-succ-⊴-thin-succ em (C ↓ c))
+    (EM-implies-fat-succ-⊴-thin-succ em (C ↓ c))
     (upper-bound-of-successors-of-initial-segments C c)
 
 fat-succ-relative-leastness-iff-EM
  : ((A : Ordinal 𝓤) → Fat-succ-relative-leastness A) ↔ EM 𝓤
 fat-succ-relative-leastness-iff-EM
- = fat-succ-relative-leastness-gives-EM , EM-gives-fat-succ-relative-leastness
+ = fat-succ-relative-leastness-implies-EM ,
+   EM-implies-fat-succ-relative-leastness
 
 \end{code}

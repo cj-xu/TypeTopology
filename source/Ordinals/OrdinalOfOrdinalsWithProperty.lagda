@@ -5,9 +5,10 @@ Ordinals satisfying a hereditary property
 
 A proposition-valued property inherited by strict predecessors determines
 an ordinal of ordinals satisfying that property.  Its internal weak order
-agrees with weak ordinal comparison.  We also construct the ordinal of
-ordinals satisfying the property and weakly below a given ordinal.  Under
-resizing assumptions, we give an order-isomorphic small construction.
+agrees with weak ordinal comparison.  For each ordinal A, we restrict the fat
+successor of A to ordinals satisfying the property and relate this restriction
+to the induced successor.  Under resizing assumptions, we give an
+order-isomorphic small construction.
 
 \begin{code}
 
@@ -28,6 +29,7 @@ open import Ordinals.OrdinalOfOrdinals ua
 open import Ordinals.Type
 open import Ordinals.Underlying
 open import Ordinals.SmallWeakPredecessors ua
+open import Ordinals.Successors ua using (fat-succ)
 open import UF.Subsingletons
 open import UF.Base
 open import UF.Embeddings
@@ -45,6 +47,12 @@ module WithProperty
         (P-is-prop : (A : Ordinal 𝓤) → is-prop (P A))
         (P-is-hereditary : (A C : Ordinal 𝓤) → P A → C ⊲ A → P C)
        where
+
+\end{code}
+
+■ The ordinal of ordinals satisfying the property
+
+\begin{code}
 
  Ordinals-with-property : 𝓤 ⁺ ̇
  Ordinals-with-property = Σ A ꞉ Ordinal 𝓤 , P A
@@ -72,8 +80,32 @@ module WithProperty
 
 \end{code}
 
-Comparison of predecessors within Pₒ is equivalent to comparison of all
-ordinal predecessors.
+■ Initial segments and weak comparison
+
+Every ordinal satisfying P is represented by its initial segment in Pₒ.
+
+\begin{code}
+
+ ordinals-in-Pₒ-are-lowersets-of-Pₒ
+  : (x : ⟨ Pₒ ⟩) → pr₁ x ≃ₒ (Pₒ ↓ x)
+ ordinals-in-Pₒ-are-lowersets-of-Pₒ x
+  = ≃ₒ-trans (pr₁ x) (OO 𝓤 ↓ pr₁ x) (Pₒ ↓ x)
+     (ordinals-in-OO-are-lowersets-of-OO (pr₁ x))
+     (simulations-pointwise-equal-gives-isomorphic-initial-segments
+       (OO 𝓤) Pₒ (OO 𝓤) (⊴-refl (OO 𝓤)) inclusion
+       (pr₁ x) x refl)
+  where
+   inclusion : Pₒ ⊴ OO 𝓤
+   inclusion = pr₁ , initial , (λ _ _ l → l)
+    where
+     initial : is-initial-segment Pₒ (OO 𝓤) pr₁
+     initial (A , p) C l
+      = (C , P-is-hereditary A C p l) , l , refl
+
+\end{code}
+
+The internal weak order on Pₒ agrees with weak ordinal comparison of the
+underlying ordinals.  The same is therefore true of their initial segments.
 
 \begin{code}
 
@@ -153,6 +185,28 @@ strict ordinal comparison.  This construction lives in the next universe.
 
 \end{code}
 
+The restricted fat successor is weakly below the fat successor.  The
+canonical simulation forgets the proof that an ordinal satisfies P.
+
+\begin{code}
+
+ restricted-fat-succ-⊴-fat-succ
+  : (A : Ordinal 𝓤) → restricted-fat-succ A ⊴ fat-succ A
+ restricted-fat-succ-⊴-fat-succ A = f , initial , order-preserving
+  where
+   f : ⟨ restricted-fat-succ A ⟩ → ⟨ fat-succ A ⟩
+   f (C , _ , h) = C , h
+
+   initial : is-initial-segment (restricted-fat-succ A) (fat-succ A) f
+   initial (C , p , _) (D , h) l
+    = (D , P-is-hereditary C D p l , h) , l , refl
+
+   order-preserving
+    : is-order-preserving (restricted-fat-succ A) (fat-succ A) f
+   order-preserving (C , _ , _) (D , _ , _) l = l
+
+\end{code}
+
 Every initial segment of the restricted fat successor represents the ordinal
 indexing its endpoint.  The canonical map to OO preserves these segments.
 
@@ -225,8 +279,9 @@ segment induced by Pₒ.
 
 ■ A small version of the restricted fat successor
 
-A chosen small representative of the weak predecessors of each ordinal lets
-us restrict them by P.  We resize the strict order and transfer the ordinal
+A chosen small representative of the weak predecessors of each ordinal gives
+the indexing type for the small construction.  Propositional resizing makes
+the condition P and the strict order small.  We then transfer the ordinal
 structure along the resulting carrier equivalence.
 
 \begin{code}
@@ -237,7 +292,7 @@ module WithPropertyAndResizing
         (P-is-prop : (A : Ordinal 𝓤) → is-prop (P A))
         (P-is-hereditary : (A C : Ordinal 𝓤) → P A → C ⊲ A → P C)
         (ρ : propositional-resizing (𝓤 ⁺) 𝓤)
-        (weak-predecessors-are-small : Weak-predecessors-are-small)
+        (weak-predecessors-are-small : Weak-predecessors-are-small {𝓤})
        where
 
  open WithProperty P P-is-prop P-is-hereditary public

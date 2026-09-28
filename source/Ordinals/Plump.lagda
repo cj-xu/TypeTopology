@@ -3,8 +3,16 @@ Tom de Jong, Nicolai Kraus, Fredrik Nordvall Forsberg and Chuangjie Xu
 
 Plump ordinals
 
-This module is intended to develop plump ordinals as a base for the
-ordinal-induced successor construction.
+We define plumpness by well-founded recursion on bounded comparison and form
+the ordinal of plump ordinals, and then construct the large plump successor and,
+under resizing assumptions, a small internal strong and exact successor.
+
+The notion of plump ordinal and the plump successor are due to Paul Taylor
+[1].  Our formulation adapts Taylor's set-theoretic development to ordinals
+in univalent type theory.
+
+[1] Paul Taylor. Intuitionistic sets and ordinals. The Journal of Symbolic
+    Logic, 61(3):705–744, 1996. https://doi.org/10.2307/2275781
 
 \begin{code}
 
@@ -17,8 +25,9 @@ module Ordinals.Plump (ua : Univalence) where
 open import UF.UA-FunExt
  using (Univalence-gives-FunExt; Univalence-gives-Fun-Ext)
 
-fe = Univalence-gives-Fun-Ext ua
-fe' = Univalence-gives-FunExt ua
+private
+ fe = Univalence-gives-Fun-Ext ua
+ fe' = Univalence-gives-FunExt ua
 
 open import MLTT.Spartan
 open import Ordinals.Notions
@@ -26,19 +35,24 @@ open import Ordinals.Equivalence
 open import Ordinals.Maps
 open import Ordinals.Propositions ua
 open import Ordinals.Underlying
-open import Ordinals.AdditionProperties ua using (𝟘ₒ-least-⊴)
+open import Ordinals.AdditionProperties ua
+ using (+ₒ-↓-left; successor-lemma-right;
+        𝟘ₒ-least-⊴)
 open import Ordinals.Type
 open import Ordinals.OrdinalOfOrdinals ua
 open import Ordinals.SmallWeakPredecessors ua
+open import Ordinals.WellOrderTransport fe'
 import Ordinals.OrdinalOfOrdinalsWithProperty
+import Ordinals.InducedSuccessor
 import Ordinals.Successors
 open import UF.Base
+open import UF.ClassicalLogic
 open import UF.Equiv
 open import UF.Size
 open import UF.Subsingletons
 open import UF.Subsingletons-FunExt
 open import Ordinals.Arithmetic fe'
- using (𝟘ₒ; 𝟙ₒ; prop-ordinal)
+ using (_+ₒ_; 𝟘ₒ; 𝟙ₒ; prop-ordinal)
 
 \end{code}
 
@@ -136,7 +150,7 @@ is-plump-is-prop {𝓤}
 
 \end{code}
 
-■ Proposition ordinals are plump.
+■ Proposition ordinals are plump
 
 \begin{code}
 
@@ -174,6 +188,98 @@ prop-ordinal-is-plump {𝓤} P i
 
 \end{code}
 
+■ Ordinal mixed transitivity and universal plumpness
+
+Ordinal mixed transitivity is equivalent to excluded middle.  The same is
+true of the statement that every ordinal is plump.
+
+\begin{code}
+
+private
+ ⊲⁻-is-well-order : is-well-order {𝓤 ⁺} {𝓤} _⊲⁻_
+ ⊲⁻-is-well-order {𝓤}
+  = order-transfer-lemma₃.well-order→ (Ordinal 𝓤) _⊲_ _⊲⁻_
+     ⊲-is-equivalent-to-⊲⁻ ⊲-is-well-order
+
+EM-implies-⊴-⊲-gives-⊲
+ : EM 𝓤
+ → (C B A : Ordinal 𝓤) → C ⊴ B → B ⊲ A → C ⊲ A
+EM-implies-⊴-⊲-gives-⊲ em C B A h k
+ = analyze (trichotomy₃ _⊲⁻_ em ⊲⁻-is-well-order C B)
+ where
+  analyze : (C ⊲⁻ B) + (C ＝ B) + (B ⊲⁻ C) → C ⊲ A
+  analyze (inl l)
+   = ⊲-is-transitive C B A (⌜ ⊲-is-equivalent-to-⊲⁻ C B ⌝⁻¹ l) k
+  analyze (inr (inl e)) = transport⁻¹ (_⊲ A) e k
+  analyze (inr (inr l))
+   = 𝟘-elim
+      (⊴-gives-not-⊲ C B h (⌜ ⊲-is-equivalent-to-⊲⁻ B C ⌝⁻¹ l))
+
+⊴-⊲-gives-⊲-implies-EM
+ : ((C B A : Ordinal 𝓤) → C ⊴ B → B ⊲ A → C ⊲ A)
+ → EM 𝓤
+⊴-⊲-gives-⊲-implies-EM {𝓤} mixed P P-is-prop
+ = decide (mixed Pₒ 𝟙ₒ 𝟚ₒ P-below-one one-below-two)
+ where
+  Pₒ = prop-ordinal P P-is-prop
+  𝟚ₒ = 𝟙ₒ {𝓤} +ₒ 𝟙ₒ
+
+  P-below-one : Pₒ ⊴ 𝟙ₒ
+  P-below-one = prop-ordinal-⊴ P-is-prop 𝟙-is-prop (λ _ → ⋆)
+
+  one-below-two : 𝟙ₒ ⊲ 𝟚ₒ
+  one-below-two = inr ⋆ , ((successor-lemma-right 𝟙ₒ) ⁻¹)
+
+  decide : Pₒ ⊲ 𝟚ₒ → P + ¬ P
+  decide (inl ⋆ , e) = inr does-not-hold
+   where
+    p-zero : Pₒ ＝ 𝟘ₒ
+    p-zero = e ∙ (+ₒ-↓-left ⋆) ⁻¹ ∙ 𝟙ₒ-↓
+
+    does-not-hold : ¬ P
+    does-not-hold = equal-𝟘-is-empty (ap ⟨_⟩ p-zero)
+  decide (inr ⋆ , e) = inl (transport⁻¹ ⟨_⟩ p-one ⋆)
+   where
+    p-one : Pₒ ＝ 𝟙ₒ
+    p-one = e ∙ successor-lemma-right 𝟙ₒ
+
+ordinal-mixed-transitivity-iff-EM
+ : ((C B A : Ordinal 𝓤) → C ⊴ B → B ⊲ A → C ⊲ A) ↔ EM 𝓤
+ordinal-mixed-transitivity-iff-EM
+ = ⊴-⊲-gives-⊲-implies-EM , EM-implies-⊴-⊲-gives-⊲
+
+EM-implies-all-ordinals-are-plump
+ : EM 𝓤 → (A : Ordinal 𝓤) → is-plump A
+EM-implies-all-ordinals-are-plump {𝓤} em
+ = transfinite-induction _⊲_ ⊲-is-well-founded is-plump step
+ where
+  step : (A : Ordinal 𝓤)
+       → ((B : Ordinal 𝓤) → B ⊲ A → is-plump B)
+       → is-plump A
+  step A ih = is-plump-intro A claim ih
+   where
+    claim : (B C : Ordinal 𝓤) → C ⊴ B → B ⊲ A
+          → is-plump C → C ⊲ A
+    claim B C h k _ = EM-implies-⊴-⊲-gives-⊲ em C B A h k
+
+all-ordinals-are-plump-implies-EM
+ : ((A : Ordinal 𝓤) → is-plump A) → EM 𝓤
+all-ordinals-are-plump-implies-EM {𝓤} all-plump
+ = ⊴-⊲-gives-⊲-implies-EM mixed
+ where
+  mixed : (C B A : Ordinal 𝓤) → C ⊴ B → B ⊲ A → C ⊲ A
+  mixed C B A h k
+   = plump-weakly-below-predecessor-is-below A B C
+       (all-plump A) h k (all-plump C)
+
+all-ordinals-are-plump-iff-EM
+ : ((A : Ordinal 𝓤) → is-plump A) ↔ EM 𝓤
+all-ordinals-are-plump-iff-EM
+ = all-ordinals-are-plump-implies-EM ,
+   EM-implies-all-ordinals-are-plump
+
+\end{code}
+
 ■ The ordinal of plump ordinals
 
 Plump ordinals inherit the strict order on ordinals.  For extensionality,
@@ -194,6 +300,12 @@ Plumpₒ 𝓤 = PlumpConstruction.Pₒ {𝓤}
 Plump : (𝓤 : Universe) → 𝓤 ⁺ ̇
 Plump 𝓤 = ⟨ Plumpₒ 𝓤 ⟩
 
+plump-ordinal-representation
+ : (A : Ordinal 𝓤) (p : is-plump A)
+ → A ≃ₒ (Plumpₒ 𝓤 ↓ (A , p))
+plump-ordinal-representation A p
+ = PlumpConstruction.ordinals-in-Pₒ-are-lowersets-of-Pₒ (A , p)
+
 \end{code}
 
 ■ Mixed transitivity of plump ordinals
@@ -213,11 +325,76 @@ plump-≼-≺-gives-≺ {𝓤} x@(A , p) y@(B , q) (C , r) h k
 
 \end{code}
 
+■ Splitting the weak order of plump ordinals
+
+The weak order on plump ordinals splits into strict comparison or equality
+exactly when excluded middle holds.
+
+\begin{code}
+
+module _ {𝓤 : Universe} where
+
+ open Ordinals.InducedSuccessor.InducedSuccessor ua (Plumpₒ 𝓤)
+  using (Weak-order-splits)
+
+ plump-weak-order-splits-implies-EM
+  : Weak-order-splits → EM 𝓤
+ plump-weak-order-splits-implies-EM splits P P-is-prop
+  = decide (splits x y x-weakly-below-y)
+  where
+   Pₒ = prop-ordinal P P-is-prop
+
+   x y : Plump 𝓤
+   x = Pₒ , prop-ordinal-is-plump P P-is-prop
+   y = 𝟙ₒ , 𝟙ₒ-is-plump
+
+   x-weakly-below-y : x ≼⟨ Plumpₒ 𝓤 ⟩ y
+   x-weakly-below-y
+    = PlumpConstruction.⊴-gives-≼ x y
+       (prop-ordinal-⊴ P-is-prop 𝟙-is-prop (λ _ → ⋆))
+
+   decide : (x ≺⟨ Plumpₒ 𝓤 ⟩ y) + (x ＝ y) → P + ¬ P
+   decide (inl (⋆ , e)) = inr does-not-hold
+    where
+     P-is-zero : Pₒ ＝ 𝟘ₒ
+     P-is-zero = e ∙ 𝟙ₒ-↓
+     does-not-hold : ¬ P
+     does-not-hold = equal-𝟘-is-empty (ap ⟨_⟩ P-is-zero)
+   decide (inr e) = inl (transport⁻¹ ⟨_⟩ (ap pr₁ e) ⋆)
+
+ EM-implies-plump-weak-order-splits
+  : EM 𝓤 → Weak-order-splits
+ EM-implies-plump-weak-order-splits em x@(A , p) y@(B , q) h
+  = decide (trichotomy₃ _⊲⁻_ em ⊲⁻-is-well-order A B)
+  where
+   A-weakly-below-B : A ⊴ B
+   A-weakly-below-B = PlumpConstruction.≼-gives-⊴ x y h
+
+   decide : (A ⊲⁻ B) + (A ＝ B) + (B ⊲⁻ A)
+          → (x ≺⟨ Plumpₒ 𝓤 ⟩ y) + (x ＝ y)
+   decide (inl l)
+    = inl (⌜ ⊲-is-equivalent-to-⊲⁻ A B ⌝⁻¹ l)
+   decide (inr (inl e))
+    = inr (to-subtype-＝ is-plump-is-prop e)
+   decide (inr (inr l))
+    = 𝟘-elim
+       (⊴-gives-not-⊲ A B A-weakly-below-B
+        (⌜ ⊲-is-equivalent-to-⊲⁻ B A ⌝⁻¹ l))
+
+ plump-weak-order-splits-iff-EM
+  : Weak-order-splits ↔ EM 𝓤
+ plump-weak-order-splits-iff-EM
+  = plump-weak-order-splits-implies-EM ,
+    EM-implies-plump-weak-order-splits
+
+\end{code}
+
 ■ The plump successor
 
 The plump successor of A consists of the plump ordinals weakly below A,
-ordered by strict ordinal comparison.  It is defined for every A and lives
-in the next universe.
+ordered by strict ordinal comparison.  It is the restricted fat successor
+for the property of being plump.  It is defined for every A and lives in the
+next universe.
 
 \begin{code}
 
@@ -239,7 +416,7 @@ plump-succ-initial-segment
 
 \end{code}
 
-■ Higher-universe plumpness implies propositional resizing
+■ Higher-universe plumpness of plump successors implies propositional resizing
 
 If the plump successor of 1 is plump in the next universe, every proposition
 in that universe is strictly below it, which gives a small representative of
