@@ -5,13 +5,14 @@ Plump ordinals
 
 We define plumpness by well-founded recursion on bounded comparison and form
 the ordinal of plump ordinals, and then construct the large plump successor and,
-under resizing assumptions, a small internal strong and exact successor.
+assuming propositional truncations and resizing, a small internal strong and
+exact successor.
 
 The notion of plump ordinal and the plump successor are due to Paul Taylor
 [1].  Our formulation adapts Taylor's set-theoretic development to ordinals
 in univalent type theory.
 
-[1] Paul Taylor. Intuitionistic sets and ordinals. The Journal of Symbolic
+[1] Paul Taylor.  Intuitionistic sets and ordinals.  The Journal of Symbolic
     Logic, 61(3):705–744, 1996. https://doi.org/10.2307/2275781
 
 \begin{code}
@@ -38,13 +39,13 @@ open import Ordinals.AdditionProperties ua
  using (+ₒ-↓-left; successor-lemma-right; 𝟘ₒ-least-⊴)
 open import Ordinals.Type
 open import Ordinals.OrdinalOfOrdinals ua
-open import Ordinals.SmallWeakPredecessors ua
 open import Ordinals.WellOrderTransport fe'
 import Ordinals.OrdinalOfOrdinalsWithProperty
 import Ordinals.InducedSuccessor
 import Ordinals.Successors
 open import UF.ClassicalLogic
 open import UF.Equiv
+open import UF.PropTrunc
 open import UF.Size
 open import UF.Subsingletons
 open import UF.Subsingletons-FunExt
@@ -479,23 +480,25 @@ plump-succ-one-is-plump-gives-propositional-resizing {𝓤} s P i = p-small
 
 ■ The small plump successor
 
-Given propositional resizing and small representatives for weak predecessors,
-we instantiate the small restricted fat successor construction.  Its strict
-predecessors are exactly the plump ordinals weakly below its input.
+The lower-set representation of simulations makes the type of weak
+predecessors small under propositional truncations and Ω-resizing.  Together
+with propositional resizing, this lets us instantiate the small restricted fat
+successor construction.  Its strict predecessors are exactly the plump
+ordinals weakly below its input.
 
 \begin{code}
 
 module WithResizing
         {𝓤 : Universe}
+        (pt : propositional-truncations-exist)
+        (ω : Ω-resizing 𝓤)
         (ρ : propositional-resizing (𝓤 ⁺) 𝓤)
-        (weak-predecessors-are-small : Weak-predecessors-are-small)
        where
 
  private
   module SmallConstruction
    = Ordinals.OrdinalOfOrdinalsWithProperty.WithPropertyAndResizing ua
-      (is-plump {𝓤}) is-plump-is-prop plump-predecessors-are-plump ρ
-      weak-predecessors-are-small
+      (is-plump {𝓤}) is-plump-is-prop plump-predecessors-are-plump pt ω ρ
 
  plump-succ-small : Ordinal 𝓤 → Ordinal 𝓤
  plump-succ-small = SmallConstruction.restricted-fat-succ-small

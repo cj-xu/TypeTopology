@@ -22,7 +22,6 @@ import Ordinals.OrdinalOfOrdinalsWithProperty
 import Ordinals.Plump
 open import Ordinals.Equivalence
 open import Ordinals.InducedSuccessor ua
-open import Ordinals.SmallWeakPredecessors ua
 open import Ordinals.Successors ua
 open import Ordinals.Type
 open import Ordinals.Underlying
@@ -35,7 +34,8 @@ open import Ordinals.Arithmetic (Univalence-gives-FunExt ua)
  using (𝟘ₒ; 𝟙ₒ)
 open import UF.Base using (transport₂)
 open import UF.ClassicalLogic
-open import UF.Size using (propositional-resizing)
+open import UF.PropTrunc
+open import UF.Size using (propositional-resizing; Ω-resizing)
 
 \end{code}
 
@@ -269,21 +269,23 @@ strictly above A.
 
 \end{code}
 
-Under propositional resizing and smallness of weak predecessors, the small
-plump successor gives an internal strong and exact successor.  The general
-characterizations then give commutation, strict monotonicity, and closure of
-the induced successor.
+Propositional truncations and Ω-resizing make the type of weak predecessors
+small via lower sets.  Together with propositional resizing, the resulting
+small plump successor gives an internal strong and exact successor.  The
+general characterizations then give commutation, strict monotonicity, and
+closure of the induced successor.
 
 \begin{code}
 
  module WithResizing
+         (pt : propositional-truncations-exist)
+         (ω : Ω-resizing 𝓤)
          (ρ : propositional-resizing (𝓤 ⁺) 𝓤)
-         (weak-predecessors-are-small : Weak-predecessors-are-small {𝓤})
         where
 
   private
    module Small
-    = Plump.WithResizing ρ weak-predecessors-are-small
+    = Plump.WithResizing pt ω ρ
 
   internal-successor : Plump.Plump 𝓤 → Plump.Plump 𝓤
   internal-successor = Small.internal-plump-succ

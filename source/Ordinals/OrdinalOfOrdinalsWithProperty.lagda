@@ -7,8 +7,8 @@ A proposition-valued property inherited by strict predecessors determines
 an ordinal of ordinals satisfying that property.  Its internal weak order
 agrees with weak ordinal comparison.  For each ordinal A, we restrict the fat
 successor of A to ordinals satisfying the property and relate this restriction
-to the induced successor.  Under resizing assumptions, we give an
-order-isomorphic small construction.
+to the induced successor.  Assuming propositional truncations and resizing,
+we give an order-isomorphic small construction.
 
 \begin{code}
 
@@ -26,13 +26,14 @@ open import Ordinals.Maps
 open import Ordinals.OrdinalOfOrdinals ua
  hiding (⊴-gives-≼)
  renaming (≼-gives-⊴ to ordinal-≼-gives-⊴)
+open import Ordinals.SimulationsLowerSets ua
 open import Ordinals.Type
 open import Ordinals.Underlying
-open import Ordinals.SmallWeakPredecessors ua
 open import Ordinals.Successors ua using (fat-succ)
 open import UF.Subsingletons
 open import UF.Equiv
 open import UF.EquivalenceExamples
+open import UF.PropTrunc
 open import UF.Size
 open import UF.UA-FunExt
  using (Univalence-gives-FunExt; Univalence-gives-Fun-Ext)
@@ -276,10 +277,11 @@ segment induced by Pₒ.
 
 ■ A small version of the restricted fat successor
 
-A chosen small representative of the weak predecessors of each ordinal gives
-the indexing type for the small construction.  Propositional resizing makes
-the condition P and the strict order small.  We then transfer the ordinal
-structure along the resulting carrier equivalence.
+The characterization of simulations as lower sets shows, assuming
+propositional truncations and Ω-resizing, that the type of weak predecessors
+of each ordinal is small.  Propositional resizing makes the condition P and
+the strict order small.  We then transfer the ordinal structure along the
+resulting carrier equivalence.
 
 \begin{code}
 
@@ -288,8 +290,9 @@ module WithPropertyAndResizing
         (P : Ordinal 𝓤 → 𝓤 ⁺ ̇ )
         (P-is-prop : (A : Ordinal 𝓤) → is-prop (P A))
         (P-is-hereditary : (A C : Ordinal 𝓤) → P A → C ⊲ A → P C)
+        (pt : propositional-truncations-exist)
+        (ω : Ω-resizing 𝓤)
         (ρ : propositional-resizing (𝓤 ⁺) 𝓤)
-        (weak-predecessors-are-small : Weak-predecessors-are-small {𝓤})
        where
 
  open WithProperty P P-is-prop P-is-hereditary public
@@ -297,37 +300,39 @@ module WithPropertyAndResizing
  private
   module Construction (A : Ordinal 𝓤) where
 
-   Small-weak-predecessors : 𝓤 ̇
-   Small-weak-predecessors
-    = resized (Weak-predecessors A) (weak-predecessors-are-small A)
+   Weak-predecessor : 𝓤 ⁺ ̇
+   Weak-predecessor = Σ C ꞉ Ordinal 𝓤 , C ⊴ A
 
-   weak-predecessor-equiv
-    : Small-weak-predecessors ≃ Weak-predecessors A
-   weak-predecessor-equiv
-    = resizing-condition (weak-predecessors-are-small A)
+   weak-predecessor-is-small : Weak-predecessor is 𝓤 small
+   weak-predecessor-is-small = the-type-of-simulations-is-small pt ω A
 
-   represented-ordinal : Small-weak-predecessors → Ordinal 𝓤
+   Small-weak-predecessor : 𝓤 ̇
+   Small-weak-predecessor = resized Weak-predecessor weak-predecessor-is-small
+
+   weak-predecessor-equiv : Small-weak-predecessor ≃ Weak-predecessor
+   weak-predecessor-equiv = resizing-condition weak-predecessor-is-small
+
+   represented-ordinal : Small-weak-predecessor → Ordinal 𝓤
    represented-ordinal w = pr₁ (⌜ weak-predecessor-equiv ⌝ w)
 
-   Q : Small-weak-predecessors → 𝓤 ̇
+   Q : Small-weak-predecessor → 𝓤 ̇
    Q w = resize ρ (P (represented-ordinal w)) (P-is-prop _)
 
    Carrier : 𝓤 ̇
-   Carrier = Σ w ꞉ Small-weak-predecessors , Q w
+   Carrier = Σ w ꞉ Small-weak-predecessor , Q w
 
    Q-equiv-P
-    : (w : Small-weak-predecessors) → Q w ≃ P (represented-ordinal w)
+    : (w : Small-weak-predecessor) → Q w ≃ P (represented-ordinal w)
    Q-equiv-P w
     = resizing-condition (ρ (P (represented-ordinal w)) (P-is-prop _))
 
    carrier-equiv : Carrier ≃ ⟨ restricted-fat-succ A ⟩
    carrier-equiv =
-     (Σ w ꞉ Small-weak-predecessors , Q w)
+     (Σ w ꞉ Small-weak-predecessor , Q w)
       ≃⟨ Σ-cong Q-equiv-P ⟩
-     (Σ w ꞉ Small-weak-predecessors , P (represented-ordinal w))
-      ≃⟨ Σ-change-of-variable-≃
-          (P ∘ pr₁) weak-predecessor-equiv ⟩
-     (Σ w ꞉ Weak-predecessors A , P (pr₁ w))
+     (Σ w ꞉ Small-weak-predecessor , P (represented-ordinal w))
+      ≃⟨ Σ-change-of-variable-≃ (P ∘ pr₁) weak-predecessor-equiv ⟩
+     (Σ w ꞉ Weak-predecessor , P (pr₁ w))
       ≃⟨ Σ-assoc ⟩
      (Σ C ꞉ Ordinal 𝓤 , C ⊴ A × P C)
       ≃⟨ Σ-cong (λ _ → ×-comm) ⟩
