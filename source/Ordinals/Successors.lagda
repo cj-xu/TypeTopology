@@ -32,16 +32,22 @@ open import UF.ClassicalLogic
 open import UF.Equiv
 open import UF.EquivalenceExamples using (+-cong; one-𝟙-only)
 open import UF.Subsingletons
+open import UF.Subsingletons-FunExt
 open import UF.UA-FunExt
-open import Ordinals.Arithmetic (Univalence-gives-FunExt ua)
-open import Ordinals.LimitPoints (Univalence-gives-FunExt ua)
+
+private
+ fe = Univalence-gives-Fun-Ext ua
+ fe' = Univalence-gives-FunExt ua
+
+open import Ordinals.Arithmetic fe'
+open import Ordinals.LimitPoints fe'
  using (is-successor-of)
 open import Ordinals.WellOrderTransport
 
 private
  ⊲⁻-is-well-order : is-well-order {𝓤 ⁺} {𝓤} _⊲⁻_
  ⊲⁻-is-well-order {𝓤}
-  = order-transfer-lemma₃.well-order→ (Univalence-gives-FunExt ua)
+  = order-transfer-lemma₃.well-order→ fe'
      (Ordinal 𝓤) _⊲_ _⊲⁻_ ⊲-is-equivalent-to-⊲⁻ ⊲-is-well-order
 
 \end{code}
@@ -57,7 +63,7 @@ module Successors {𝓤 : Universe} (B : Ordinal 𝓤) where
   x ≺ᴮ y = x ≺⟨ B ⟩ y
 
   _≼ᴮ_ : ⟨ B ⟩ → ⟨ B ⟩ → 𝓤 ̇
-  x ≼ᴮ y = x ≼⟨ B ⟩ y
+ x ≼ᴮ y = x ≼⟨ B ⟩ y
 
 \end{code}
 
@@ -71,12 +77,36 @@ strict upper bound of x.
                        × ((z : ⟨ B ⟩) → z ≺ᴮ x → z ≼ᴮ y)
                        × ((z : ⟨ B ⟩) → y ≺ᴮ z → x ≼ᴮ z)
 
+ strong-succ-is-prop
+  : (s x : ⟨ B ⟩) → is-prop (s is-strong-succ-of x)
+ strong-succ-is-prop s x
+  = ×-is-prop
+     (Prop-valuedness B x s)
+     (×-is-prop
+       (Π₄-is-prop fe (λ z _ w _ → Prop-valuedness B w x))
+       (Π₄-is-prop fe (λ z _ w _ → Prop-valuedness B w z)))
+
  strong-succ-gives-succ : (s x : ⟨ B ⟩)
                         → s is-strong-succ-of x → is-successor-of B s x
  strong-succ-gives-succ s x strong = pr₁ strong , pr₁ (pr₂ strong)
 
  calc-strong-succ : (⟨ B ⟩ → ⟨ B ⟩) → 𝓤 ̇
  calc-strong-succ s = (x : ⟨ B ⟩) → (s x) is-strong-succ-of x
+
+ Has-strong-succ : 𝓤 ̇
+ Has-strong-succ
+  = (x : ⟨ B ⟩) → Σ s ꞉ ⟨ B ⟩ , s is-strong-succ-of x
+
+ strong-succ-is-unique
+  : (x : ⟨ B ⟩) → is-prop (Σ s ꞉ ⟨ B ⟩ , s is-strong-succ-of x)
+ strong-succ-is-unique x (s , p) (t , q)
+  = to-subtype-＝ (λ u → strong-succ-is-prop u x)
+     (Antisymmetry B s t
+       (pr₂ (pr₂ p) t (pr₁ q))
+       (pr₂ (pr₂ q) s (pr₁ p)))
+
+ Has-strong-succ-is-prop : is-prop Has-strong-succ
+ Has-strong-succ-is-prop = Π-is-prop fe strong-succ-is-unique
 
 \end{code}
 
@@ -90,6 +120,16 @@ requires every element weakly below x to be strictly below s.
  _is-exact-succ-of_ : ⟨ B ⟩ → ⟨ B ⟩ → 𝓤 ̇
  s is-exact-succ-of x = (z : ⟨ B ⟩) → (z ≺ᴮ s ↔ z ≼ᴮ x)
 
+ exact-succ-is-prop
+  : (s x : ⟨ B ⟩) → is-prop (s is-exact-succ-of x)
+ exact-succ-is-prop s x
+  = Π-is-prop fe (λ z →
+     ×-is-prop
+      (Π-is-prop fe (λ _ →
+        extensional-po-is-prop-valued
+         (underlying-order B) fe' (Prop-valuedness B) z x))
+      (Π-is-prop fe (λ _ → Prop-valuedness B z s)))
+
  exact-succ-gives-succ : (s x : ⟨ B ⟩)
                        → s is-exact-succ-of x → is-successor-of B s x
  exact-succ-gives-succ s x exact
@@ -99,12 +139,119 @@ requires every element weakly below x to be strictly below s.
  Has-exact-successors
   = (x : ⟨ B ⟩) → Σ s ꞉ ⟨ B ⟩ , s is-exact-succ-of x
 
+ exact-succ-is-unique
+  : (x : ⟨ B ⟩) → is-prop (Σ s ꞉ ⟨ B ⟩ , s is-exact-succ-of x)
+ exact-succ-is-unique x (s , p) (t , q)
+  = to-subtype-＝ (λ u → exact-succ-is-prop u x)
+     (Extensionality B s t
+       (λ z l → pr₂ (q z) (pr₁ (p z) l))
+       (λ z l → pr₂ (p z) (pr₁ (q z) l)))
+
+ Has-exact-successors-is-prop : is-prop Has-exact-successors
+ Has-exact-successors-is-prop = Π-is-prop fe exact-succ-is-unique
+
 \end{code}
 
-Under mixed transitivity, that is, x ≼ᴮ y → y ≺ᴮ z → x ≺ᴮ z,
-exact successors and strong successors coincide.
+Ordinary successors lie between strong and exact successors.  A strong
+successor is weakly below every ordinary successor, and every ordinary
+successor is weakly below an exact successor.  Consequently, every strong
+successor is weakly below every exact successor.
 
-Without that assumption, we keep the two notions distinct.
+Conversely, if every element has both kinds of successor with the exact one
+weakly below the strong one, then mixed transitivity holds.
+
+\begin{code}
+
+ strong-succ-≼-succ
+  : (s t x : ⟨ B ⟩)
+  → s is-strong-succ-of x
+  → is-successor-of B t x
+  → s ≼ᴮ t
+ strong-succ-≼-succ s t x strong successor
+  = pr₂ (pr₂ strong) t (pr₁ successor)
+
+ succ-≼-exact-succ
+  : (s t x : ⟨ B ⟩)
+  → is-successor-of B s x
+  → t is-exact-succ-of x
+  → s ≼ᴮ t
+ succ-≼-exact-succ s t x successor exact z l
+  = pr₂ (exact z) (pr₂ successor z l)
+
+ strong-succ-≼-exact-succ
+  : (s t x : ⟨ B ⟩)
+  → s is-strong-succ-of x
+  → t is-exact-succ-of x
+  → s ≼ᴮ t
+ strong-succ-≼-exact-succ s t x strong exact
+  = strong-succ-≼-succ s t x strong
+     (exact-succ-gives-succ t x exact)
+
+ exact-succ-≼-strong-succ-gives-mixed-transitivity
+  : ((x : ⟨ B ⟩)
+      → Σ s ꞉ ⟨ B ⟩ ,
+        Σ t ꞉ ⟨ B ⟩ ,
+          (s is-strong-succ-of x)
+        × (t is-exact-succ-of x)
+        × (t ≼ᴮ s))
+  → ((x y z : ⟨ B ⟩) → x ≼ᴮ y → y ≺ᴮ z → x ≺ᴮ z)
+ exact-succ-≼-strong-succ-gives-mixed-transitivity
+  successors x y z h k
+  = ≺-≼-gives-≺ B x s z x-below-s s-below-z
+  where
+   s : ⟨ B ⟩
+   s = pr₁ (successors y)
+
+   t : ⟨ B ⟩
+   t = pr₁ (pr₂ (successors y))
+
+   strong : s is-strong-succ-of y
+   strong = pr₁ (pr₂ (pr₂ (successors y)))
+
+   exact : t is-exact-succ-of y
+   exact = pr₁ (pr₂ (pr₂ (pr₂ (successors y))))
+
+   t-below-s : t ≼ᴮ s
+   t-below-s = pr₂ (pr₂ (pr₂ (pr₂ (successors y))))
+
+   x-below-t : x ≺ᴮ t
+   x-below-t = pr₂ (exact x) h
+
+   x-below-s : x ≺ᴮ s
+   x-below-s = ≺-≼-gives-≺ B x t s x-below-t t-below-s
+
+   s-below-z : s ≼ᴮ z
+   s-below-z = pr₂ (pr₂ strong) z k
+
+\end{code}
+
+As a special case, if every element has a successor that is both strong and
+exact, then mixed transitivity holds.
+
+\begin{code}
+
+ Has-strong-and-exact-successors : 𝓤 ̇
+ Has-strong-and-exact-successors
+  = (x : ⟨ B ⟩)
+  → Σ s ꞉ ⟨ B ⟩ ,
+    (s is-strong-succ-of x) × (s is-exact-succ-of x)
+
+ strong-and-exact-successors-give-mixed-transitivity
+  : Has-strong-and-exact-successors
+  → ((x y z : ⟨ B ⟩) → x ≼ᴮ y → y ≺ᴮ z → x ≺ᴮ z)
+ strong-and-exact-successors-give-mixed-transitivity
+  successors
+  = exact-succ-≼-strong-succ-gives-mixed-transitivity
+     (λ x →
+       let u = successors x
+           s = pr₁ u
+           strong = pr₁ (pr₂ u)
+           exact = pr₂ (pr₂ u)
+       in s , s , strong , exact , Reflexivity B)
+
+\end{code}
+
+Under mixed transitivity, exact successors and strong successors coincide.
 
 \begin{code}
 
