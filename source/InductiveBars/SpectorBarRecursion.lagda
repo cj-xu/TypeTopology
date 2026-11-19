@@ -1,6 +1,8 @@
 Chuangjie Xu, November 2026
 
-We construct a Spector bar recursor for each bar-continuous control functional.
+We construct a Spector bar recursor for each bar-continuous control functional
+and prove that, for fixed recursion data, it gives the unique solution of
+Spector's bar-recursion equations.
 
 Following the approach of Paulo Oliva and Silvia Steila in "A direct proof of
 Schwichtenberg's bar recursion closure theorem" (2018, Theorem 2.4), we derive
@@ -39,8 +41,10 @@ open import InductiveBars.Continuity A ℕ
 \end{code}
 
 A witness of `V controls-recursion-at s` describes the possible recursive
-calls starting at s. Along each branch, recursion stops at the first
-extension of s that belongs to V.
+calls starting at s.
+
+Unlike a barring witness, each branch stops at the first prefix belonging
+to V, including s itself.
 
 \begin{code}
 
@@ -57,7 +61,8 @@ data _controls-recursion-at_ {𝓥 : Universe} (V : List A → 𝓥 ̇)
 
 \end{code}
 
-For decidable V, if V bars s, then V controls recursion at s.
+When V has decidable membership, we can turn a barring witness into
+a control witness by stopping whenever the current prefix belongs to V.
 
 \begin{code}
 
@@ -81,64 +86,117 @@ and when to continue.
 
 module _ {𝓦 : Universe} (X : 𝓦 ̇) where
 
- eval : {V : List A → 𝓥 ̇}
+ eval : (V : List A → 𝓥 ̇)
       → (List A → X) → (List A → (A → X) → X)
       → (s : List A) → V controls-recursion-at s → X
- eval G H s (stop _) = G s
- eval G H s (continue _ φ) = H s (λ a → eval G H (s ++ [ a ]) (φ a))
+ eval V G H s (stop _) = G s
+ eval V G H s (continue _ φ) = H s (λ a → eval V G H (s ++ [ a ]) (φ a))
 
 \end{code}
 
-Evaluation is independent of the control witness, even when V is not
-proposition-valued, because evaluation does not use the data carried by
-stop witnesses. We use this independence to verify the recursion equations.
+For fixed V and s, any two control witnesses at s are either both `stop`
+or both `continue`. Because evaluation ignores the membership proofs,
+its value is independent of the chosen control witness.
+
+We use this independence to verify the recursion equations.
 
 \begin{code}
 
  eval-witness-independent
-  : {V : List A → 𝓥 ̇}
+  : (V : List A → 𝓥 ̇)
   → (G : List A → X) (H : List A → (A → X) → X)
   → (s : List A) (c c' : V controls-recursion-at s)
-  → eval G H s c ＝ eval G H s c'
- eval-witness-independent G H s (stop p) (stop q) = refl
- eval-witness-independent G H s (stop p) (continue q ψ) = 𝟘-elim (q p)
- eval-witness-independent G H s (continue p φ) (stop q) = 𝟘-elim (p q)
- eval-witness-independent G H s (continue p φ) (continue q ψ)
+  → eval V G H s c ＝ eval V G H s c'
+ eval-witness-independent V G H s (stop p) (stop q) = refl
+ eval-witness-independent V G H s (stop p) (continue q ψ) = 𝟘-elim (q p)
+ eval-witness-independent V G H s (continue p φ) (stop q) = 𝟘-elim (p q)
+ eval-witness-independent V G H s (continue p φ) (continue q ψ)
   = ap (H s) (dfunext fe ih)
   where
    ih : (a : A)
-      → eval G H (s ++ [ a ]) (φ a) ＝ eval G H (s ++ [ a ]) (ψ a)
-   ih a = eval-witness-independent G H (s ++ [ a ]) (φ a) (ψ a)
+      → eval V G H (s ++ [ a ]) (φ a) ＝ eval V G H (s ++ [ a ]) (ψ a)
+   ih a = eval-witness-independent V G H (s ++ [ a ]) (φ a) (ψ a)
 
 \end{code}
 
-If V controls recursion at every finite sequence, we can construct
-a general bar recursor for V in the sense of Oliva and Steila, using
-the above evaluation function.
+The general bar-recursion equations:
+
+\begin{code}
+
+ general-bar-recursion-equations
+  : (List A → 𝓥 ̇)
+  → (List A → X)
+  → (List A → (A → X) → X)
+  → (List A → X)
+  → 𝓤 ⊔ 𝓦 ⊔ 𝓥 ̇
+ general-bar-recursion-equations V G H Φ
+  = (s : List A)
+  → (s ∈ V → Φ s ＝ G s)
+  × (s ∉ V → Φ s ＝ H s (λ a → Φ (s ++ [ a ])))
+
+\end{code}
+
+Every function satisfying the general bar-recursion equations agrees with
+evaluation at any prefix with a control witness.
+
+\begin{code}
+
+ eval-is-unique
+  : (V : List A → 𝓥 ̇)
+  → (G : List A → X) (H : List A → (A → X) → X)
+  → (Φ : List A → X)
+  → general-bar-recursion-equations V G H Φ
+  → (s : List A) (b : V controls-recursion-at s)
+  → Φ s ＝ eval V G H s b
+ eval-is-unique V G H Φ Φeq s (stop p) = pr₁ (Φeq s) p
+ eval-is-unique V G H Φ Φeq s (continue q φ) = pr₂ (Φeq s) q ∙ e
+  where
+   ih : (a : A) → Φ (s ++ [ a ]) ＝ eval V G H (s ++ [ a ]) (φ a)
+   ih a = eval-is-unique V G H Φ Φeq (s ++ [ a ]) (φ a)
+   e : H s (λ a → Φ (s ++ [ a ])) ＝
+       H s (λ a → eval V G H (s ++ [ a ]) (φ a))
+   e = ap (H s) (dfunext fe ih)
+
+\end{code}
+
+We now use evaluation to construct the general bar recursor for V that
+controls recursion at every finite sequence.
+
+By the corresponding properties of evaluation, the constructed recursor
+is the unique solution to the general bar-recursion equations.
 
 \begin{code}
 
  BarRecursor : 𝓤 ⊔ 𝓦 ̇
  BarRecursor = (List A → X) → (List A → (A → X) → X) → List A → X
 
- gbr : {B : List A → 𝓥 ̇}
-     → ((s : List A) → B controls-recursion-at s)
+ gbr : (V : List A → 𝓥 ̇)
+     → ((s : List A) → V controls-recursion-at s)
      → BarRecursor
- gbr d G H s = eval G H s (d s)
+ gbr V d G H s = eval V G H s (d s)
 
  general-bar-recursor-spec
-  : {B : List A → 𝓥 ̇} (d : (s : List A) → B controls-recursion-at s)
-  → (G : List A → X) (H : List A → (A → X) → X) (s : List A)
-  → (s ∈ B → gbr d G H s ＝ G s)
-  × (s ∉ B → gbr d G H s ＝ H s (λ a → gbr d G H (s ++ [ a ])))
- general-bar-recursor-spec {B = B} d G H s = base-case , step-case
+  : (V : List A → 𝓥 ̇) (d : (s : List A) → V controls-recursion-at s)
+  → (G : List A → X) (H : List A → (A → X) → X)
+  → general-bar-recursion-equations V G H (gbr V d G H)
+ general-bar-recursor-spec V d G H s = base-case , step-case
   where
-   unique : (e : B controls-recursion-at s) → gbr d G H s ＝ eval G H s e
-   unique e = eval-witness-independent G H s (d s) e
-   base-case : s ∈ B → gbr d G H s ＝ G s
-   base-case p = unique (stop p)
-   step-case : s ∉ B → gbr d G H s ＝ H s (λ a → gbr d G H (s ++ [ a ]))
-   step-case q = unique (continue q (λ a → d (s ++ [ a ])))
+   eqs : (e : V controls-recursion-at s) → gbr V d G H s ＝ eval V G H s e
+   eqs e = eval-witness-independent V G H s (d s) e
+   base-case : s ∈ V → gbr V d G H s ＝ G s
+   base-case p = eqs (stop p)
+   step-case : s ∉ V → gbr V d G H s ＝ H s (λ a → gbr V d G H (s ++ [ a ]))
+   step-case q = eqs (continue q (λ a → d (s ++ [ a ])))
+
+ general-bar-recursor-is-unique
+  : (V : List A → 𝓥 ̇) (d : (s : List A) → V controls-recursion-at s)
+  → (G : List A → X) (H : List A → (A → X) → X)
+  → (Φ : List A → X)
+  → general-bar-recursion-equations V G H Φ
+  → (s : List A)
+  → Φ s ＝ gbr V d G H s
+ general-bar-recursor-is-unique V d G H Φ Φeq s
+  = eval-is-unique V G H Φ Φeq s (d s)
 
 \end{code}
 
@@ -162,10 +220,9 @@ assume a given a₀ : A throughout the development of Spector bar recursion.
 
 \end{code}
 
-A bar of determining prefixes gives a bar of stopping prefixes.
-
-This result is due to the fact that, once s determines Y, all extensions
-of s by Y (pad s) + 1 entries satisfy the stopping condition.
+If s determines Y, every extension of s by Y (pad s) + 1 entries satisfies
+the stopping condition. This allows us to turn a bar of determining prefixes
+into a bar of stopping prefixes.
 
 \begin{code}
 
@@ -224,18 +281,29 @@ stopping predicate.
 \begin{code}
 
   sbr : (Y : (ℕ → A) → ℕ) → is-bar-continuous Y → BarRecursor
-  sbr Y b = gbr (bar-continuity-implies-stopping-prefixes-control-recursion Y b)
+  sbr Y b
+   = gbr (stopping-prefixes Y)
+         (bar-continuity-implies-stopping-prefixes-control-recursion Y b)
+
+  spector-bar-recursion-equations
+   : ((ℕ → A) → ℕ)
+   → (List A → X)
+   → (List A → (A → X) → X)
+   → (List A → X)
+   → 𝓤 ⊔ 𝓦 ̇
+  spector-bar-recursion-equations Y G H Φ
+   = (s : List A)
+   → (Y (pad s) <ℕ length s → Φ s ＝ G s)
+   × (length s ≤ℕ Y (pad s) → Φ s ＝ H s (λ a → Φ (s ++ [ a ])))
 
   spector-bar-recursor-spec
    : (Y : (ℕ → A) → ℕ) (b : is-bar-continuous Y)
-   → (G : List A → X) (H : List A → (A → X) → X) (s : List A)
-   → (Y (pad s) <ℕ length s
-        → sbr Y b G H s ＝ G s)
-   × (length s ≤ℕ Y (pad s)
-        → sbr Y b G H s ＝ H s (λ a → sbr Y b G H (s ++ [ a ])))
+   → (G : List A → X) (H : List A → (A → X) → X)
+   → spector-bar-recursion-equations Y G H (sbr Y b G H)
   spector-bar-recursor-spec Y b G H s
    using (base-case , step-case) ←
      general-bar-recursor-spec
+       (stopping-prefixes Y)
        (bar-continuity-implies-stopping-prefixes-control-recursion Y b) G H s
    = base-case , step-case'
    where
@@ -245,8 +313,38 @@ stopping predicate.
 
 \end{code}
 
-Moreover, the above Spector bar recursor is independent of the witness
-that the control functional is bar continuous.
+Any function satisfying Spector's bar-recursion equations for Y also
+satisfies the general bar-recursion equations for stopping-prefixes Y.
+So it agrees with the constructed Spector bar recursor by the
+uniqueness of the general bar recursor.
+
+\begin{code}
+
+  spector-bar-recursor-is-unique
+   : (Y : (ℕ → A) → ℕ) (b : is-bar-continuous Y)
+   → (G : List A → X) (H : List A → (A → X) → X)
+   → (Φ : List A → X)
+   → spector-bar-recursion-equations Y G H Φ
+   → (s : List A)
+   → Φ s ＝ sbr Y b G H s
+  spector-bar-recursor-is-unique Y b G H Φ Φeq
+   = general-bar-recursor-is-unique (stopping-prefixes Y) c G H Φ Φgbr
+   where
+    c : (s : List A) → (stopping-prefixes Y) controls-recursion-at s
+    c = bar-continuity-implies-stopping-prefixes-control-recursion Y b
+    Φgbr : general-bar-recursion-equations (stopping-prefixes Y) G H Φ
+    Φgbr t = eq₁ , eq₂
+     where
+      eq₁ : t ∈ stopping-prefixes Y → Φ t ＝ G t
+      eq₁ = pr₁ (Φeq t)
+      eq₂ : t ∉ stopping-prefixes Y → Φ t ＝ H t (λ a → Φ (t ++ [ a ]))
+      eq₂ q = pr₂ (Φeq t) (not-less-bigger-or-equal (length t) (Y (pad t)) q)
+
+\end{code}
+
+In particular, the Spector bar recursor is independent of the witness
+that the control functional is bar continuous. We also give a direct
+proof using evaluation independence.
 
 \begin{code}
 
@@ -254,7 +352,8 @@ that the control functional is bar continuous.
    : (Y : (ℕ → A) → ℕ) (b b' : is-bar-continuous Y)
    → (G : List A → X) (H : List A → (A → X) → X) (s : List A)
    → sbr Y b G H s ＝ sbr Y b' G H s
-  sbr-witness-independent Y b b' G H s = eval-witness-independent G H s c c'
+  sbr-witness-independent Y b b' G H s
+   = eval-witness-independent (stopping-prefixes Y) G H s c c'
    where
     c c' : stopping-prefixes Y controls-recursion-at s
     c  = bar-continuity-implies-stopping-prefixes-control-recursion Y b s

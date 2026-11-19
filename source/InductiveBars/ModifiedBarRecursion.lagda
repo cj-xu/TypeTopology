@@ -109,6 +109,34 @@ equal functions of child results before they are passed to H.
 
 \end{code}
 
+Every solution of the modified bar-recursion equation agrees with
+evaluation on any barring witness.
+
+\begin{code}
+
+ eval-is-unique
+  : (Y : (ℕ → A) → R)
+  → (H : List A → (A → R) → ℕ → A)
+  → (Ψ : List A → R)
+  → ((s : List A) → Ψ s ＝ Y (s ++∞ H s (λ a → Ψ (s ++ [ a ]))))
+  → (s : List A)
+  → (b : determining-prefixes Y bars s)
+  → Ψ s ＝ eval Y H s b
+ eval-is-unique Y H ψ ψeq s (hit det) = ψeq s ∙ e
+  where
+   e : Y (s ++∞ H s (λ a → ψ (s ++ [ a ]))) ＝
+       Y (s ++∞ H s (λ a → Y (pad-with a s)))
+   e = det _ _ (++∞-extends s _) (++∞-extends s _)
+ eval-is-unique Y H ψ ψeq s (step φ) = ψeq s ∙ e
+  where
+   ih : (a : A) → ψ (s ++ [ a ]) ＝ eval Y H (s ++ [ a ]) (φ a)
+   ih a = eval-is-unique Y H ψ ψeq (s ++ [ a ]) (φ a)
+   e : Y (s ++∞ H s (λ a → ψ (s ++ [ a ]))) ＝
+       Y (s ++∞ H s (λ a → eval Y H (s ++ [ a ]) (φ a)))
+   e = ap (λ x → Y (s ++∞ H s x)) (dfunext fe ih)
+
+\end{code}
+
 Bar continuity supplies a barring witness at every prefix. Evaluating
 these witnesses defines the modified bar recursor. Its witness independence
 and recursion equation follow from the corresponding properties of the
@@ -139,5 +167,16 @@ modified-bar-recursion-spec
  → mbr Y bc H s ＝ Y (s ++∞ H s (λ a → mbr Y bc H (s ++ [ a ])))
 modified-bar-recursion-spec Y bc H s
  = eval-spec Y H s (bc s) (λ a → bc (s ++ [ a ]))
+
+modified-bar-recursor-is-unique
+ : (Y : (ℕ → A) → R)
+ → (bc : is-bar-continuous″ Y)
+ → (H : List A → (A → R) → ℕ → A)
+ → (Φ : List A → R)
+ → ((s : List A) → Φ s ＝ Y (s ++∞ H s (λ a → Φ (s ++ [ a ]))))
+ → (s : List A)
+ → Φ s ＝ mbr Y bc H s
+modified-bar-recursor-is-unique Y bc H Φ Φmbr s
+ = eval-is-unique Y H Φ Φmbr s (bc s)
 
 \end{code}
